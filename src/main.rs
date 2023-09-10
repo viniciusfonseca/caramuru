@@ -187,7 +187,12 @@ fn eval(expr: ast::Term, call_stack: &CallStack) -> RuntimeValue {
 }
 
 fn main() -> VoidResult {
-    let mut json_bytes = std::fs::File::open("combination.json")?;
+    let args: Vec<String> = std::env::args().collect();
+    let ast_path = match args.get(1) {
+        None => { eprintln!("usage: rinha-compiler <ast-json-path>"); return Ok(()) },
+        Some(x) => x
+    };
+    let mut json_bytes = std::fs::File::open(ast_path)?;
     let mut buf = vec![];
     json_bytes.read_to_end(&mut buf)?;
     let ast = serde_json::from_slice::<ast::File>(&buf)?;
