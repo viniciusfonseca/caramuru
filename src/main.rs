@@ -84,14 +84,22 @@ fn call_fn(callee: ast::Term, arguments: Vec<ast::Term>, call_stack: &CallStack)
         RuntimeValue::Function(x) => {
             match x {
                 Function { parameters, value, location } => {
-                    if arguments.len() < parameters.len() {
+                    if arguments.len() != parameters.len() {
                         panic!("wrong number of args passed to {name}");
+                    }
+                    let mut var_scope = HashMap::new();
+                    let mut i = 0;
+                    for arg in &arguments {
+                        let key = &parameters[i].text;
+                        i = i + 1;
+                        let val = eval(arg.clone(), &call_stack);
+                        var_scope.insert(key.to_string(), val);
                     }
                     call_stack.push(Call {
                         arguments,
                         callee: Some(ast::Term::Str(Str { ..Default::default() })),
                         location: location.clone(),
-                        var_scope: HashMap::new()
+                        var_scope
                     });
                     eval(*value.clone(), &call_stack)
                 }
@@ -160,6 +168,9 @@ fn eval(expr: ast::Term, call_stack: &CallStack) -> RuntimeValue {
             match eval(*x.condition, &call_stack) {
                 RuntimeValue::Bool(y) =>
                     if y { eval(*x.then, &call_stack) }
+                    else { eval(*x.otherwise, &call_stack) },
+                RuntimeValue::Int(y) =>
+                    if y != 0 { eval(*x.then, &call_stack) }
                     else { eval(*x.otherwise, &call_stack) },
                 _ => panic!("error: condition is not a boolean"),
             }
