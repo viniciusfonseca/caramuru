@@ -169,8 +169,8 @@ fn eval(expr: ast::Term, call_stack: &CallStack) -> RuntimeValue {
 
 fn main() -> VoidResult {
     let mut json_bytes = std::fs::File::open("fib.json")?;
-    let mut buf = [0; 50 * 0x100000];
-    json_bytes.read(&mut buf)?;
+    let mut buf = vec![];
+    json_bytes.read_to_end(&mut buf)?;
     let ast = serde_json::from_slice::<ast::File>(&buf)?;
     let call_stack: CallStack = CallStack::new();
     call_stack.push(Call {
