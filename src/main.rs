@@ -41,9 +41,10 @@ impl CallStack {
         self.inner.borrow_mut().pop();
     }
     pub fn get_var(&self, name: &String) -> RuntimeValue {
-        let len = self.len() - 1;
+        let len = self.len();
+        let stack = &self.inner.borrow();
         for i in (0..len).rev() {
-            let var_scope = &self.inner.borrow()[i].var_scope;
+            let var_scope = &stack[i].var_scope;
             for (varname, runtime_value) in var_scope {
                 if name.ne(varname) { continue }
                 return match runtime_value {
@@ -51,7 +52,7 @@ impl CallStack {
                     RuntimeValue::Str(x) => RuntimeValue::Str(x.to_string()),
                     RuntimeValue::Bool(x) => RuntimeValue::Bool(*x),
                     RuntimeValue::Tuple(_) => todo!(),
-                    RuntimeValue::Function(_) => todo!(),
+                    RuntimeValue::Function(x) => RuntimeValue::Function(x.clone()),
                     RuntimeValue::Void(_) => RuntimeValue::Void(()),
                 }
             }
@@ -59,8 +60,8 @@ impl CallStack {
         panic!("reference \"{name}\" not found")
     }
     pub fn set_var(&self, name: &String, value: RuntimeValue) {
-        let len = self.len() - 1;
-        let var_scope = &mut self.inner.borrow_mut()[len].var_scope;
+        let last = self.len() - 1;
+        let var_scope = &mut self.inner.borrow_mut()[last].var_scope;
         var_scope.insert(name.to_string(), value);
     }
 }
@@ -155,7 +156,14 @@ fn eval(expr: ast::Term, call_stack: &CallStack) -> RuntimeValue {
             call_stack.set_var(&x.name.text, eval(*x.value, &call_stack));
             eval(*x.next, &call_stack)
         },
-        ast::Term::If(_) => todo!(),
+        ast::Term::If(x) => {
+            match eval(*x.condition, &call_stack) {
+                RuntimeValue::Bool(y) =>
+                    if y { eval(*x.then, &call_stack) }
+                    else { eval(*x.otherwise, &call_stack) },
+                _ => panic!("error: condition is not a boolean"),
+            }
+        },
         ast::Term::Print(x) => print_value(x, &call_stack),
         ast::Term::First(_) => todo!(),
         ast::Term::Second(_) => todo!(),
