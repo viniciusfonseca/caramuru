@@ -1,0 +1,2 @@
+target:
+	cargo build --release

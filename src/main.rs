@@ -1,6 +1,5 @@
 use std::{io::Read, collections::HashMap, cell::RefCell, rc::Rc};
 
-use ast::{Function, Str};
 use lalrpop_util::lalrpop_mod;
 
 pub mod ast;
@@ -67,7 +66,7 @@ impl CallStack {
 }
 
 pub enum RuntimeValue {
-    Int(isize),
+    Int(i32),
     Str(String),
     Bool(bool),
     Tuple(Vec<RuntimeValue>),
@@ -83,7 +82,7 @@ fn call_fn(callee: ast::Term, arguments: Vec<ast::Term>, call_stack: &CallStack)
     let result = match call_stack.get_var(&name) {
         RuntimeValue::Function(x) => {
             match x {
-                Function { parameters, value, location } => {
+                ast::Function { parameters, value, location } => {
                     if arguments.len() != parameters.len() {
                         panic!("wrong number of args passed to {name}");
                     }
@@ -97,7 +96,7 @@ fn call_fn(callee: ast::Term, arguments: Vec<ast::Term>, call_stack: &CallStack)
                     }
                     call_stack.push(Call {
                         arguments,
-                        callee: Some(ast::Term::Str(Str { ..Default::default() })),
+                        callee: Some(ast::Term::Str(ast::Str { ..Default::default() })),
                         location: location.clone(),
                         var_scope
                     });
@@ -111,7 +110,7 @@ fn call_fn(callee: ast::Term, arguments: Vec<ast::Term>, call_stack: &CallStack)
     result
 }
 
-fn eval_binary_op(op: ast::BinaryOp, l: RuntimeValue, r: RuntimeValue) -> isize {
+fn eval_binary_op(op: ast::BinaryOp, l: RuntimeValue, r: RuntimeValue) -> i32 {
     let l = match l {
         RuntimeValue::Int(x) => x,
         _ => panic!("operand is not an integer"),
@@ -180,22 +179,28 @@ fn eval(expr: ast::Term, call_stack: &CallStack) -> RuntimeValue {
         ast::Term::Second(_) => todo!(),
         ast::Term::Bool(x) => RuntimeValue::Bool(x.value),
         ast::Term::Tuple(_) => todo!(),
-        ast::Term::Var(x) => {
-            call_stack.get_var(&x.text)
-        },
+        ast::Term::Var(x) => call_stack.get_var(&x.text)
     }
 }
 
 fn main() -> VoidResult {
     let args: Vec<String> = std::env::args().collect();
-    let ast_path = match args.get(1) {
-        None => { eprintln!("usage: rinha-compiler <ast-json-path>"); return Ok(()) },
+    let input_path = match args.get(1) {
+        None => { eprintln!("usage: rinha-compiler <ast-json-path | source file>"); return Ok(()) },
         Some(x) => x
     };
-    let mut json_bytes = std::fs::File::open(ast_path)?;
+    let mut input_bytes = std::fs::File::open(input_path)?;
     let mut buf = vec![];
-    json_bytes.read_to_end(&mut buf)?;
-    let ast = serde_json::from_slice::<ast::File>(&buf)?;
+    input_bytes.read_to_end(&mut buf)?;
+    let ast = if input_path.ends_with(".json") {
+        serde_json::from_slice::<ast::File>(&buf)?
+    }
+    else {
+        let mut errors = vec![];
+        let input = std::str::from_utf8(&buf)?;
+        rinha::FileParser::new().parse(&mut errors, &input_path, input)
+            .expect("error parsing source file")
+    };
     let call_stack: CallStack = CallStack::new();
     call_stack.push(Call {
         arguments: vec![],

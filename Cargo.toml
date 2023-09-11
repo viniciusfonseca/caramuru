@@ -1,5 +1,5 @@
 [package]
-name = "rinha-compiler"
+name = "caramuru"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,6 +14,7 @@ lalrpop-util = { version = "0.20", default-features = false, features = [
   "unicode",
 ] }
 thiserror = "1.0"
+rinha = "0.0"
 
 [build-dependencies]
 lalrpop = "0.20"

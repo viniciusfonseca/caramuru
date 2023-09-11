@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+RESULT_COMBINATION=`./target/release/caramuru examples/combination.rinha`
+
+echo "combination.rinha output: $RESULT_COMBINATION"
+
+RESULT_FIB=`./target/release/caramuru examples/fib.rinha`
+
+echo "fib.rinha output: $RESULT_FIB"
+
+RESULT_SUM=`./target/release/caramuru examples/sum.rinha`
+
+echo "sum.rinha output: $RESULT_SUM"
