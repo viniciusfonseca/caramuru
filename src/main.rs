@@ -198,8 +198,13 @@ fn main() -> VoidResult {
     else {
         let mut errors = vec![];
         let input = std::str::from_utf8(&buf)?;
-        rinha::FileParser::new().parse(&mut errors, &input_path, input)
-            .expect("error parsing source file")
+        match parser::FileParser::new().parse(&mut errors, &input_path, input) {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("parse error: {}", e);
+                std::process::exit(1)
+            }
+        }
     };
     let call_stack: CallStack = CallStack::new();
     call_stack.push(Call {
